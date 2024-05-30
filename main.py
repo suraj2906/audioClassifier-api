@@ -10,6 +10,9 @@ import io
 
 from fastapi import FastAPI, UploadFile, File
 
+import psutil
+import os
+
 
 app = FastAPI()
 
@@ -56,38 +59,38 @@ async def predict(file: UploadFile = File(...)):
 
     df = pd.DataFrame(features)
 
-    n_fft=2048
-    hop_length=512
-    n_mels=128
-    mels = librosa.feature.melspectrogram(y=y, sr=sr,  n_fft=n_fft, hop_length=hop_length, n_mels=n_mels)
-    S_db = librosa.power_to_db(mels, ref=np.max)
-    plt.axis("off")
-    plt.tight_layout()
-    librosa.display.specshow(S_db, sr=sr, x_axis='time', y_axis='mel')
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    plt.close()  # Close the figure to free memory
-    buf.seek(0)
-    image = np.frombuffer(buf.getvalue(), dtype=np.uint8)
-    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-    resized_img = cv2.resize(image, (200, 200))
-    rescaled_img = resized_img / 255.0
-    img_to_predict = np.expand_dims(rescaled_img, axis=0)
+    # n_fft=2048
+    # hop_length=512
+    # n_mels=128
+    # mels = librosa.feature.melspectrogram(y=y, sr=sr,  n_fft=n_fft, hop_length=hop_length, n_mels=n_mels)
+    # S_db = librosa.power_to_db(mels, ref=np.max)
+    # plt.axis("off")
+    # plt.tight_layout()
+    # librosa.display.specshow(S_db, sr=sr, x_axis='time', y_axis='mel')
+    # buf = io.BytesIO()
+    # plt.savefig(buf, format='png')
+    # plt.close()  # Close the figure to free memory
+    # buf.seek(0)
+    # image = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+    # image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+    # resized_img = cv2.resize(image, (200, 200))
+    # rescaled_img = resized_img / 255.0
+    # img_to_predict = np.expand_dims(rescaled_img, axis=0)
     
 
     featuresModel = tf.keras.models.load_model('featuresModel.h5')
-    imageModel = tf.keras.models.load_model('imageModel.h5')
-    pred = imageModel.predict(img_to_predict)
-    print(pred)
-    imagePred = 1 - pred[0][0]
+    # imageModel = tf.keras.models.load_model('imageModel.h5')
+    # pred = imageModel.predict(img_to_predict)
+    # print(pred)
+    # imagePred = 1 - pred[0][0]
     resultArr = featuresModel.predict(df)
     featurePred = sum(resultArr) / len(resultArr)
     featurePred = featurePred[0]
-    final_result = np.mean([featurePred, imagePred], axis=0)
-    if(final_result > 0.7):
-        return{"Voice" : f"AI with probablilty: {final_result}"}
+    # final_result = np.mean([featurePred, imagePred], axis=0)
+    if(featurePred > 0.7):
+        return{"Voice" : f"AI with probablilty: {featurePred}"}
     else:
-        return{"Voice" : f"Real with probablilty: {1 - final_result}"}
+        return{"Voice" : f"Real with probablilty: {1 - featurePred}"}
 
 if __name__ == "__main__":
     import uvicorn
