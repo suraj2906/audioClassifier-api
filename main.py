@@ -10,6 +10,7 @@ import io
 
 from fastapi import FastAPI, UploadFile, File
 
+
 app = FastAPI()
 
 
